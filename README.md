@@ -14,6 +14,17 @@ In conventional zero-knowledge proving pipelines, witness generation occurs on t
 
 ---
 
+## Video Demonstration
+
+A full synchronized live terminal demonstration ([`execmesh_demo.mp4`](execmesh_demo.mp4), 2m 44s) is included in this repository, showing:
+1. **Hardware Baseline Inspection**: Standard commodity setup (NVIDIA GeForce GTX 1650 4GB VRAM & Intel Xeon CPU).
+2. **Preflight Diagnostics (`execmesh doctor`)**: Verification of GPU compute architecture, CUDA driver, available VRAM, and Circom toolchain dependencies.
+3. **End-to-End Proving (`execmesh demo`)**: Device-resident witness generation, Groth16 proof generation, snarkjs verification, and non-deterministic CSPRNG blinding ($r, s \in \mathbb{F}_r^*$).
+4. **Live Side-by-Side Benchmark (`execmesh demo --live-compare batchtx`)**: Direct invocation comparison on the 278k constraint BatchTx circuit measuring a 2.50x live speedup over conventional CPU witness + Rapidsnark.
+5. **Audited Performance Matrix (`execmesh demo --comparison batchtx`)**: Review of published 20-vector benchmark matrices.
+
+---
+
 ## Key Technical Highlights
 
 - **Device-Resident Witness Execution**: Circuit constraints and signal assignments are compiled into optimized CUDA execution schedules that execute entirely on GPU cores.
@@ -51,7 +62,11 @@ All figures are measured from audited, reproducible multi-vector benchmark suite
 
 Evaluation binaries and pre-compiled benchmark packages are available for qualifying zero-knowledge development teams and rollup operators.
 
-To request access to the standalone evaluation bundle (`ExecMesh_Client_Evaluation_v1.tar.gz`) or to benchmark your team's custom Circom circuits, see the [Design Partner Program](docs/DESIGN_PARTNER.md) or email `partners@execmesh.io`.
+- **Encrypted Evaluation Distribution**: `ExecMesh_Client_Evaluation_v1.tar.gz.gpg`
+- **Cloud Download Link**: [Google Drive Secure Distribution](https://drive.google.com/open?id=1cvjOe6tSwALVGe1OblBesp9SCqt3swkJ)
+- **SHA-256 Integrity Digest**: `57c12d95a4b198c99551afb3b0140bb679c20be65206b46991814545a706282e`
+
+To request the symmetric decryption key, evaluation license, or to benchmark your team's custom Circom circuits, see the [Design Partner Program](docs/DESIGN_PARTNER.md) or email `partners@execmesh.io`.
 
 ---
 
