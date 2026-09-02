@@ -1,75 +1,74 @@
-# ExecMesh: Device-Resident GPU Zero-Knowledge Groth16 Prover
+# ExecMesh GPU Circom/Groth16 Proving
+### GPU Witness Generation + Native GPU Groth16 Prover
 
-<p align="center">
-  <strong>High-Throughput, Low-Latency ZK-SNARK Prover with Zero Host-to-Device Witness Overhead</strong>
-</p>
-
----
-
-## Overview
-
-In conventional zero-knowledge proving pipelines, witness generation occurs on the CPU (in Node.js/WASM or native C++), serializing millions of field elements across the PCIe bus before GPU-accelerated multi-scalar multiplication (MSM) and number-theoretic transform (NTT) can begin. This memory boundary forms a major throughput and latency bottleneck.
-
-**ExecMesh** is a hardware-accelerated zero-knowledge proving system that fuses Circom circuit evaluation and Groth16 proving directly inside NVIDIA GPU device memory. By keeping witness calculation entirely on-device, ExecMesh achieves **zero host-to-device witness memory transfer (0 bytes D2H)**, cutting end-to-end latency and maximizing GPU compute utilization.
+ExecMesh is a proprietary, end-to-end zero-knowledge acceleration stack that unifies **GPU-native Circom witness generation** and **native CUDA Groth16 proving** on commodity hardware.
 
 ---
 
-## Video Demonstration
+## 1. What Exists Today
 
-A full synchronized live terminal demonstration ([`execmesh_demo.mp4`](execmesh_demo.mp4), 2m 44s) is included in this repository, showing:
-1. **Hardware Baseline Inspection**: Standard commodity setup (NVIDIA GeForce GTX 1650 4GB VRAM & Intel Xeon CPU).
-2. **Preflight Diagnostics (`execmesh doctor`)**: Verification of GPU compute architecture, CUDA driver, available VRAM, and Circom toolchain dependencies.
-3. **End-to-End Proving (`execmesh demo`)**: Device-resident witness generation, Groth16 proof generation, snarkjs verification, and non-deterministic CSPRNG blinding ($r, s \in \mathbb{F}_r^*$).
-4. **Live Side-by-Side Benchmark (`execmesh demo --live-compare batchtx`)**: Direct invocation comparison on the 278k constraint BatchTx circuit measuring a 2.50x live speedup over conventional CPU witness + Rapidsnark.
-5. **Audited Performance Matrix (`execmesh demo --comparison batchtx`)**: Review of published 20-vector benchmark matrices.
-
----
-
-## Key Technical Highlights
-
-- **Device-Resident Witness Execution**: Circuit constraints and signal assignments are compiled into optimized CUDA execution schedules that execute entirely on GPU cores.
-- **Unified Memory Pipeline**: Witness pointers are passed directly into the fused BN254 MSM/NTT GPU engine without roundtripping through host RAM or PCIe.
-- **Production Cryptographic Security**: Strict Groth16 zero-knowledge compliance with active CSPRNG blinding scalars ($r, s \in \mathbb{F}_r^*$), generating unique verifiable proofs on every invocation.
-- **Relocatable Package Architecture (`execmesh-package-v1`)**: Self-contained circuit packages with cryptographic SHA-256 integrity gating and standard `snarkjs` compatibility.
+- **Proprietary GPU Circom Witness Engine**: Hardware-accelerated witness calculation generating $100\%$ byte-identical binary WTNS v2 output against canonical Circom WASM/C++.
+- **Proprietary Native Groth16 GPU Prover**: Fast CUDA BN254 Groth16 prover with persistent QAP memory residency and Pippenger MSM / NTT acceleration.
+- **Independent Cryptographic Verification**: $100\%$ of generated proofs strictly verify against standard verification keys using standard open-source verifiers (`snarkjs groth16 verify`).
+- **Commodity 4 GB VRAM Architecture**: Engineered to execute large-scale circuits (up to $2^{21}$–$2^{22}$ constraints / wires) within a $4\text{ GB}$ GPU VRAM ceiling (tested on NVIDIA GTX 1650).
+- **Automated Customer Circuit Onboarding**: Standardized preflight and evaluation tooling for external Circom/Groth16 circuits.
 
 ---
 
-## Published Benchmark Matrix
+## 2. Verified Benchmark Evidence
 
-All figures are measured from audited, reproducible multi-vector benchmark suites on commodity hardware (NVIDIA GeForce GTX 1650 4GB VRAM vs. Intel Xeon CPU baseline):
+We believe in complete transparency and reproducible engineering evidence. All benchmarks are conducted on identical hardware and verified cryptographically.
 
-| Circuit | Constraints / Signals | Conventional Baseline (p50)<br>*(Circom C++ &rarr; Rapidsnark)* | ExecMesh GPU (p50)<br>*(Device-Resident)* | Latency Advantage |
-| :--- | :--- | :--- | :--- | :--- |
-| **Pedersen(512)** | 6,519 constraints / 7,032 wires | ~1,850 ms | ~1,010 ms | **1.83x** |
-| **SHA256(512)** | 62,528 constraints / 62,561 wires | 2,709 ms | 2,441 ms | **1.11x** |
-| **BatchTx(278k)** | 278,128 constraints / 551,768 wires | 19.44 s | 9.89 s | **1.97x** |
+### Current Matched Campaign (AnonAadhaar, 1,104,354 Variables / $2^{21}$ Domain)
+*Hardware: NVIDIA GeForce GTX 1650 (4 GB GDDR5) / Intel Xeon E3-1245 v2 @ 3.40 GHz (4C/8T)*
 
-*Detailed benchmark methodology and reproducibility instructions are documented in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).*
+| Pipeline Component | Node/Circom CPU Witness (W=8) + ICICLE CUDA Groth16 | ExecMesh Native GPU Stack (P3 Witness + P5A Prover) | Paired Comparison & Verdict |
+| :--- | :---: | :---: | :---: |
+| **Witness Generation Phase** | 52.08 s / N16 (3.255 s/witness) | 54.80 s / N16 (3.425 s/witness) | ExecMesh ~5.2% slower in matched campaign |
+| **Groth16 Prover Phase** | 30.28 s / N16 (1.893 s/proof) | 34.90 s / N16 (2.181 s/proof) | ExecMesh ~15.2% slower in matched campaign |
+| **Total Compute Path** | **82.36 s / N16 (5.147 s/proof)** | **90.86 s / N16 (5.679 s/proof)** | **Point estimate: ExecMesh 10.3% slower**<br>*(95% CI: `[-22.86 s, +73.87 s]` per 48 proofs)* |
+| **Cryptographic Verification** | **240 / 240 PASS (100.0%)** | **240 / 240 PASS (100.0%)** | **100.0% Byte Parity & SnarkJS Pass** |
+
+> **Matched Campaign Verdict**: In the five-pair matched campaign ($K=3 \times N=16 = 48\text{ proofs/replicate}$, total 240 proofs/arm), **no statistically significant compute-path difference was detected between ExecMesh Native and the reference pipeline**. Run-to-run system noise on the commodity test environment exceeded the architectural difference.
+
+- **Detailed Matched Benchmarks**: See [docs/BENCHMARKS_CURRENT_2026_09.md](docs/BENCHMARKS_CURRENT_2026_09.md)
+- **Direct GPU Witness Q&A**: See [docs/GPU_WITNESS_AND_PIPELINE_RESULTS.md](docs/GPU_WITNESS_AND_PIPELINE_RESULTS.md)
+- **Historical Benchmarks (vs Rapidsnark)**: See [docs/BENCHMARKS_HISTORICAL.md](docs/BENCHMARKS_HISTORICAL.md)
 
 ---
 
-## Documentation
+## 3. Product & Delivery Modalities
 
-- [Technical Architecture & Deep Dive](docs/TECHNICAL_OVERVIEW.md)
-- [Benchmark Protocol & Results](docs/BENCHMARKS.md)
+1. **Engine Licensing**: Direct binary daemon / library integration into existing prover fleets (e.g. rollup sequencers, proof aggregators).
+2. **Managed Proving Service**: Cloud proving API (`POST /v1/jobs/submit`) for automated proof dispatch, worker health monitoring, and cryptographic receipt settlement.
+3. **Private Appliance**: Dedicated deployment inside customer VPC / on-premise infrastructure where private witnesses never leave customer security boundaries.
+
+---
+
+## 4. Documentation
+
+- [GPU Witness Generation & Full Pipeline Results](docs/GPU_WITNESS_AND_PIPELINE_RESULTS.md)
+- [Current Benchmark Methodology & Results](docs/BENCHMARKS_CURRENT_2026_09.md)
+- [Historical Benchmarks (vs Rapidsnark)](docs/BENCHMARKS_HISTORICAL.md)
+- [Technical Architecture](docs/TECHNICAL_OVERVIEW.md)
 - [Cryptographic Security & Blinding Model](docs/SECURITY.md)
-- [Supported Circuits & Bounded Circom Support](docs/SUPPORTED_CIRCUITS.md)
-- [Design Partner Program & Custom Circuit Evaluation](docs/DESIGN_PARTNER.md)
+- [Supported Circuit Scope & Boundaries](docs/SUPPORTED_CIRCUITS.md)
+- [Design Partner Program](docs/DESIGN_PARTNER.md)
+- [Current System Limitations](docs/LIMITATIONS.md)
 
 ---
 
-## Client Evaluation Package
+## 5. Design Partner Evaluation
 
-Evaluation binaries and pre-compiled benchmark packages are available for qualifying zero-knowledge development teams and rollup operators.
+We offer **Design-Partner Acceleration Pilots** for teams running production Circom/Groth16 circuits:
+- **Prover-Only Evaluation**: Provide compiled `circuit.wasm`, `circuit.zkey`, `verification_key.json`, and sample `inputs.json` (zero source code required).
+- **Custom GPU Witness Schedule Port**: Provide `.circom` source and dependencies for custom GPU compilation.
+- **Deliverables**: Comprehensive benchmark report comparing your current pipeline against ExecMesh on matched hardware, with independent verification receipts.
 
-- **Encrypted Evaluation Distribution**: `ExecMesh_Client_Evaluation_v1.tar.gz.gpg`
-- **Cloud Download Link**: [Google Drive Secure Distribution](https://drive.google.com/open?id=1cvjOe6tSwALVGe1OblBesp9SCqt3swkJ)
-- **SHA-256 Integrity Digest**: `57c12d95a4b198c99551afb3b0140bb679c20be65206b46991814545a706282e`
-
-To request the symmetric decryption key, evaluation license, or to benchmark your team's custom Circom circuits, see the [Design Partner Program](docs/DESIGN_PARTNER.md) or email `partners@execmesh.io`.
+To schedule a pilot or request a private evaluation bundle, email `partners@execmesh.io`.
 
 ---
 
 ## License
 
-The documentation and specifications in this repository are published under the [Apache 2.0 License](LICENSE). ExecMesh binaries and compiler toolchains are proprietary software governed by the [ExecMesh Evaluation License](docs/DESIGN_PARTNER.md).
+Documentation and schemas are published under the [Apache 2.0 License](LICENSE). ExecMesh binaries and compiler toolchains are proprietary software governed by the ExecMesh Evaluation License.

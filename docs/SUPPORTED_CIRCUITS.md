@@ -1,25 +1,23 @@
-# Supported Circuits & Bounded Circom Features
+# ExecMesh Supported Circuits & Framework Boundaries
 
-## Supported Circom Language Subset
+## 1. Supported Cryptographic Scope
 
-ExecMesh compiles and executes a deterministic, bounded subset of the Circom 2.x language designed for high-performance GPU scheduling:
+- **Proof System**: Groth16 (`snarkjs` / `circom_runtime` compatible)
+- **Elliptic Curve**: `BN254` (`alt_bn128`)
+- **Circuit Framework**: Circom (`v2.0.0` through `v2.2.x`)
+- **Witness Format**: Binary WTNS v2 (256-bit prime field canonical representation)
+- **Circuit Capacity**: Verified on the current 4 GB configuration through the AnonAadhaar 1.104M-variable / $2^{21}$-domain workload. Larger workloads require preflight qualification and/or additional VRAM. Larger circuits supported via expanded memory or multi-batch scheduling.
 
-### Fully Supported Constructs
-- Multi-dimensional signal arrays and nested components.
-- Standard arithmetic gates (addition, subtraction, multiplication, division, modulo in $\mathbb{F}_r$).
-- Bitwise operators, shifts, and comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`).
-- Standard circomlib components:
-  - `Bitify` (Num2Bits, Bits2Num)
-  - `Comparators` (LessThan, GreaterThan, IsZero, IsEqual)
-  - `Gates` (AND, OR, XOR, NOT, NAND, NOR)
-  - `Sha256` / `Sha256compression`
-  - `Pedersen` / `BabyJubjub` point additions and scalar multiplications
-  - `Poseidon` / `MiMC` sponge hash functions
-  - `MerkleTree` verifiers and inclusion proofs
-  - `EdDSAPoseidonVerifier` / `EdDSAMiMCVerifier`
+---
 
-### Architectural Bounds & Dynamic Constructs
-ExecMesh enforces strict static schedule compilation for GPU memory alignment:
-- Circuit loop bounds must be statically evaluatable at compilation time.
-- Dynamic runtime recursion is bounded by static maximum stack depth.
-- Invariant topology verification requires passing $N \ge 20$ sample execution vectors during package gating.
+## 2. Onboarding Requirements by Evaluation Mode
+
+### Mode A: Prover-Only Evaluation (Zero Source Code Required)
+To evaluate the ExecMesh Native Groth16 GPU Prover against your existing witness pipeline:
+- Provide: `circuit.wasm`, `circuit.zkey`, `verification_key.json`, and sample `inputs/*.json`.
+- *(Zero proprietary circuit source code required).*
+
+### Mode B: Custom GPU Witness Porting
+To evaluate the proprietary ExecMesh GPU Witness Engine on a new circuit:
+- If the circuit is not yet compiled into an ExecMesh GPU schedule, the onboarding toolchain flags `CPU_PRE_DISPATCH_PORT_REQUIRED`.
+- Compiling a custom GPU witness schedule requires: `.circom` source files, include dependencies (e.g. `circomlib`), and parameter definitions.

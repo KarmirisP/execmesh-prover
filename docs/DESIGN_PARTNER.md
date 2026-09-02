@@ -1,28 +1,28 @@
-# ExecMesh Design Partner Program
+# ExecMesh Design-Partner Acceleration Program
 
-## Bring Your Own Circuit (BYOC) Evaluation
-
-ExecMesh is currently working with select zero-knowledge engineering teams, rollup operators, and privacy infrastructure developers to benchmark and accelerate proprietary Circom circuits.
-
-### How the Evaluation Process Works
-
-1. **Circuit Intake & Confidentiality**:
-   - Design partners provide their `.circom` circuit definition, proving key (`.zkey`), and reference input/output vectors.
-   - All client intellectual property is handled under standard mutual Non-Disclosure Agreements (NDA).
-
-2. **Automated Compilation & Optimization**:
-   - The ExecMesh compiler ingests the circuit topology, optimizes signal schedules, and compiles fused GPU execution binaries.
-   - Circuit topology is verified across multi-vector invariance suites to guarantee mathematical equivalence with Circom reference witnesses.
-
-3. **Evaluation Package Delivery**:
-   - Design partners receive a relocatable, self-contained `execmesh-package-v1` evaluation bundle.
-   - Partners benchmark proof latency and verify output proofs locally on their own GPU clusters without exposing internal compiler source code.
+We invite zero-knowledge development teams, rollup operators, and privacy protocol engineers to participate in our **Design-Partner Acceleration Pilot**:
 
 ---
 
-## Requesting Access
+## 1. What We Provide
 
-To request participation in the ExecMesh Design Partner Program or to obtain the standalone client evaluation bundle, please reach out to:
+1. **Independent Matched Benchmark**: We benchmark your existing proving pipeline (CPU witness + ICICLE/Rapidsnark) against ExecMesh on identical hardware.
+2. **Comprehensive Pilot Report**: Detailed latency analysis across witness generation, polynomial calculation, and MSM/NTT proving, plus proofs/sec throughput and cost-per-proof projections.
+3. **Cryptographic Parity Receipts**: $100\%$ byte-parity witness validation and SnarkJS verification logs for every evaluated proof vector.
+4. **Production Architecture Blueprint**: Deployment guidance for dedicated on-premise, VPC, or cloud proving infrastructure.
 
-- **Email**: `partners@execmesh.io`
-- **Technical Inquiries**: `eval@execmesh.io`
+---
+
+## 2. Evaluation Modes
+
+- **Prover-Only Evaluation**: Zero source code required. Send compiled `circuit.wasm` + `circuit.zkey` + `verification_key.json` + sample inputs.
+- **Full GPU Witness + Prover Port**: Provide `.circom` source + build dependencies for custom GPU witness schedule compilation.
+
+---
+
+## 3. How to Apply
+
+Email `partners@execmesh.io` with:
+1. Target circuit framework and rough constraint/wire count.
+2. Current proving latency, hardware target, and volume requirements.
+3. Your primary optimization goal (latency reduction, throughput expansion, or cloud cost minimization).

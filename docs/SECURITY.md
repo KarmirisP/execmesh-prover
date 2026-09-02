@@ -1,23 +1,24 @@
-# ExecMesh Cryptographic Security & Disclosure
+# ExecMesh Security & Data Handling Policy
 
-## Groth16 Compliance & Zero-Knowledge Guarantee
+## 1. Zero-Knowledge Cryptographic Blinding Model
 
-ExecMesh produces Groth16 zk-SNARK proofs over the BN254 curve ($y^2 = x^3 + 3$).
-
-### Zero-Knowledge Randomization (CSPRNG Blinding)
-The Groth16 proving protocol achieves computational zero-knowledge by randomizing proof points using blinding scalars $r, s \in \mathbb{F}_r^*$:
-
-$$A = \alpha + \sum_{i=0}^m a_i L_i(x) + r \delta$$
-$$B = \beta + \sum_{i=0}^m b_i R_i(x) + s \delta$$
-$$C = \frac{\sum_{i=l+1}^m a_i (u_i(x) + v_i(x) + w_i(x)) + h(x) t(x) + s A + r B - r s \delta}{\delta}$$
-
-ExecMesh samples $r$ and $s$ at runtime directly from a cryptographically secure random entropy source (`/dev/urandom`). Proofs generated from identical inputs are guaranteed to possess distinct group elements and unique SHA-256 digests while remaining universally verifiable.
+ExecMesh strictly preserves the zero-knowledge property of the Groth16 proof system:
+- In each proof generation cycle, the prover samples fresh, independent blinding scalars $r, s \in \mathbb{F}_r^*$ using a hardware-backed cryptographically secure pseudo-random number generator (CSPRNG).
+- Blinded proof elements $A \in G_1$, $B \in G_2$, and $C \in G_1$ reveal zero computational information about private witness wires beyond the validity of the public statement.
 
 ---
 
-## Artifact Integrity & Package Security
+## 2. Ephemeral Execution Mode (`--ephemeral-inputs`)
 
-ExecMesh packages utilize cryptographic integrity gating:
-- Every relocatable package (`manifest.json`) includes SHA-256 digests of all schedule binaries, proving keys, and verification parameters.
-- Prover runtimes verify artifact integrity prior to GPU execution.
-- Proof generation fails gracefully if artifact tampering or checksum mismatches are detected.
+For customer evaluations and hosted proving:
+- Private inputs and derived witness files (`.wtns`) stored in temporary scratch space are automatically unlinked and purged upon receipt generation.
+- **Ephemeral Cleanup Receipt**: An execution receipt confirming the unlinking and purging of scratch files is provided with proof outputs.
+- *(Note: While ExecMesh purges files from its active application workflows, forensic hardware-level sanitization depends on the underlying infrastructure).*
+
+---
+
+## 3. Quarantined Ingestion & Provenance
+
+- Customer-provided compiled artifacts are stored in isolated read-only quarantine paths (`0444`).
+- All assets are tracked via immutable SHA-256 digests in machine-readable `execmesh_circuit_manifest.json` files.
+- Customer proprietary assets are never committed to public repositories or shared remote backups.

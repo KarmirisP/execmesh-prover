@@ -1,47 +1,56 @@
-# ExecMesh Technical Architecture
+# ExecMesh Technical Architecture & Prover Pipeline
 
-## The Witness Memory Bottleneck
+## 1. High-Level Architecture
 
-Standard zero-knowledge proving architectures divide proof generation into two distinct phases executed across heterogeneous hardware boundaries:
-
-1. **Witness Generation (CPU)**: An arithmetic interpreter (e.g. `witnesscalc`, `snarkjs` WASM, or native C++ compiled from Circom) processes input signals and computes all intermediate wire assignments in host RAM.
-2. **Proving Engine (GPU)**: The host process serializes the entire witness array ($10^5$ to $10^7$ 32-byte field elements) and transfers it over PCIe to GPU VRAM for Multi-Scalar Multiplication (MSM) and Number-Theoretic Transform (NTT) acceleration.
-
-In large-scale zkRollups and transaction verifiers, this PCIe synchronization overhead introduces substantial latency, bus contention, and significant host memory pressure.
-
----
-
-## The ExecMesh Fused Pipeline
-
-ExecMesh eliminates the CPU-to-GPU memory transfer boundary by translating Circom constraint topologies directly into fused GPU computation graphs.
+ExecMesh delivers end-to-end zero-knowledge proving acceleration by orchestrating two specialized, high-performance GPU daemons under strict $4\text{ GB}$ VRAM lifecycle management:
 
 ```text
-[ Input JSON ]
-      │
-      ▼
+[ Customer Input JSON ]
+           │
+           ▼
 ┌────────────────────────────────────────────────────────┐
-│                   ExecMesh GPU Runtime                 │
+│             ExecMesh Prover Architecture               │
 │                                                        │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │ 1. Device-Resident Witness Kernel                │  │
-│  │    • Montgomery field arithmetic in VRAM         │  │
-│  │    • In-place signal propagation                 │  │
-│  │    • Direct device pointer handoff (0 bytes D2H) │  │
+│  │ 1. Persistent GPU Witness Daemon (P3 Engine)     │  │
+│  │    • Montgomery field arithmetic in CUDA         │  │
+│  │    • In-place topological signal evaluation      │  │
+│  │    • 100% byte-identical binary WTNS v2 output   │  │
 │  └────────────────────────┬─────────────────────────┘  │
-│                           │ Device Witness Pointer     │
+│                           │ WTNS v2 Buffer             │
 │  ┌────────────────────────▼─────────────────────────┐  │
-│  │ 2. Fused CUDA BN254 Groth16 Prover               │  │
-│  │    • High-occupancy Pippenger MSM                │  │
-│  │    • Radix-2 NTT / Coset Evaluations             │  │
-│  │    • Hardware CSPRNG Blinding (r, s in Fr*)      │  │
+│  │ 2. VRAM Lifecycle & Pre-Dispatch Validator       │  │
+│  │    • Strict 4 GB memory residency transition     │  │
+│  │    • <1 ms binary WTNS structural validation     │  │
+│  └────────────────────────┬─────────────────────────┘  │
+│                           │ Validated Witness          │
+│  ┌────────────────────────▼─────────────────────────┐  │
+│  │ 3. Native Groth16 GPU Prover Daemon (P5A Engine) │  │
+│  │    • Persistent QAP polynomial memory cache      │  │
+│  │    • High-occupancy Pippenger MSM on BN254       │  │
+│  │    • Radix-2 Coset NTT evaluations               │  │
+│  │    • Hardware CSPRNG blinding (r, s in Fr*)      │  │
 │  └────────────────────────┬─────────────────────────┘  │
 └───────────────────────────┼────────────────────────────┘
                             │
                             ▼
-               [ Verified Groth16 Proof ]
+           [ Standard SnarkJS-Verifiable Proof ]
 ```
 
-### Key Innovations:
-1. **Zero-Copy Device Handoff**: The full witness vector is never allocated in host memory or transferred across PCIe. The GPU witness kernel outputs device pointers directly to the proving engine.
-2. **Kernel Fusion & Topology Gating**: Constant-folding and operation fusion reduce total kernel launches, maximizing warp occupancy on commodity GPUs.
-3. **Reproducible ABI (`execmesh-package-v1`)**: Relocatable packages contain pre-compiled schedule binaries, initialization layouts, and cryptographic verification metadata, enabling seamless deployment across containerized proving clusters.
+---
+
+## 2. Core Subsystems
+
+### 2.1 Persistent GPU Witness Engine (P3 Daemon)
+- Computes non-linear and linear constraint assignments directly on GPU threads.
+- Avoids host thread scheduling bottlenecks when executing complex cryptographic primitives (e.g. Poseidon, MiMC, SHA256).
+- Emits canonical binary WTNS v2 files with exact cryptographic byte-parity against Circom WASM/C++.
+
+### 2.2 Native Groth16 GPU Prover (P5A Daemon)
+- Maintains the Groth16 proving key (`circuit.zkey`) and pre-calculated QAP coefficients resident in host/device memory.
+- Performs Multi-Scalar Multiplications (MSM) on $G_1$ and $G_2$ elliptic curve points in parallel.
+- Computes radix-2 Number Theoretic Transforms (NTT) for quotient polynomial evaluation $H(x)$.
+
+### 2.3 Hardened Worker Subsystem & Bounded Subprocesses
+- Pre-validates binary WTNS headers and variable counts in $<1\text{ ms}$ before allocating GPU memory.
+- Supervises native CUDA processes with dedicated watchdog threads, enforcing strict wall-clock execution deadlines and zero-leakage recovery.
