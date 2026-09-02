@@ -10,7 +10,7 @@ ExecMesh is a proprietary, end-to-end zero-knowledge acceleration stack that uni
 - **Proprietary GPU Circom Witness Engine**: Hardware-accelerated witness calculation generating $100\%$ byte-identical binary WTNS v2 output against canonical Circom WASM/C++.
 - **Proprietary Native Groth16 GPU Prover**: Fast CUDA BN254 Groth16 prover with persistent QAP memory residency and Pippenger MSM / NTT acceleration.
 - **Independent Cryptographic Verification**: $100\%$ of generated proofs strictly verify against standard verification keys using standard open-source verifiers (`snarkjs groth16 verify`).
-- **Commodity 4 GB VRAM Architecture**: Engineered to execute large-scale circuits (up to $2^{21}$–$2^{22}$ constraints / wires) within a $4\text{ GB}$ GPU VRAM ceiling (tested on NVIDIA GTX 1650).
+- **Commodity 4 GB VRAM Architecture**: Verified on the current 4 GB configuration through the AnonAadhaar 1.104M-variable / $2^{21}$-domain workload. Larger workloads require preflight qualification and/or additional VRAM.
 - **Automated Customer Circuit Onboarding**: Standardized preflight and evaluation tooling for external Circom/Groth16 circuits.
 
 ---
@@ -72,3 +72,14 @@ To schedule a pilot or request a private evaluation bundle, email `partners@exec
 ## License
 
 Documentation and schemas are published under the [Apache 2.0 License](LICENSE). ExecMesh binaries and compiler toolchains are proprietary software governed by the ExecMesh Evaluation License.
+
+
+---
+
+## 3. Technical Demonstration Video
+
+A complete end-to-end recorded run of our self-serve client evaluation suite (`./demo/verify_all.sh`) on NVIDIA GeForce GTX 1650 (4 GB VRAM):
+
+- **Current Production Pipeline Demo (September 2026)**: [execmesh_gpu_witness_pipeline_demo_20260902.mp4](execmesh_gpu_witness_pipeline_demo_20260902.mp4)  
+  *Demonstrates: Hardware preflight → Node/Circom CPU witness vs ExecMesh GPU witness (100% byte-parity) → Native Groth16 GPU proof generation → SnarkJS cryptographic verification.*
+- **Historical BatchTx / Rapidsnark Demo (Archival August 2026)**: [docs/archive/historical_batchtx_rapidsnark_demo_20260816.mp4](docs/archive/historical_batchtx_rapidsnark_demo_20260816.mp4)
